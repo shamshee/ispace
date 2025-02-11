@@ -1,6 +1,8 @@
 package com.ispace.practical_assignment.exception;
 
 import com.ispace.practical_assignment.security.payload.MessageResponse;
+import com.ispace.practical_assignment.util.ResponseUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,51 +23,50 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> myMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public ResponseEntity<?> myMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        log.error("property validation error",e);
         Map<String, String> response = new HashMap<>();
         e.getBindingResult().getAllErrors().forEach(err -> {
             String fieldName = ((FieldError) err).getField();
             String message = err.getDefaultMessage();
             response.put(fieldName, message);
         });
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 
+        return ResponseUtil.error(HttpStatus.BAD_REQUEST.value(), "property validation failed",response);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<MessageResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.error("Invalid JSON request: ", ex);
+        return ResponseUtil.error(HttpStatus.BAD_REQUEST.value(), "Json request is not proper");
 
-        MessageResponse errorResponse = new MessageResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<MessageResponse> handleInternalServerError(Exception ex) {
-
-;
-        MessageResponse errorResponse = new MessageResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<?> handleInternalServerError(Exception ex) {
+        log.error("Internal server error: ", ex);
+      return ResponseUtil.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<MessageResponse> handleAccessDeniedException (Exception ex) {
-
-        ;
-        MessageResponse errorResponse = new MessageResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    public ResponseEntity<?> handleAccessDeniedException (Exception ex) {
+        log.error("Access denied: ", ex);
+        return ResponseUtil.error(HttpStatus.FORBIDDEN.value(), ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<MessageResponse> resourceNotFound(ResourceNotFoundException re){
-
-        MessageResponse errorResponse = new MessageResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Resource Not found for given id"
-        );
-        return new ResponseEntity<>(errorResponse,HttpStatus.NOT_FOUND);
+    public ResponseEntity<?> resourceNotFound(ResourceNotFoundException re){
+        log.error("Resource not found: ", re);
+        return ResponseUtil.error(HttpStatus.NOT_FOUND.value(), "No Data found");
     }
+
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<?> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        log.error("Invalid path accessed: {}", path, ex);
+
+        return ResponseUtil.error(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+    }
+
 }

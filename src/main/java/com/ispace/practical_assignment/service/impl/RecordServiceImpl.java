@@ -25,14 +25,6 @@ public class RecordServiceImpl implements RecordService {
     private RecordRepository repository;
 
 
-    // Custom configuration to prevent ModelMapper to  mapping 'deviceId' to 'id'
-//    @PostConstruct
-//    public void configureModelMapper() {
-//        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-//        mapper.typeMap(RecordDTO.class, RecordEntity.class).addMappings(mapping ->
-//                mapping.skip(RecordEntity::setRecordId));  // Skip 'id' field mapping
-//    }
-
 
     @Override
     public RecordDTO saveRecord(RecordDTO recordDTO) {

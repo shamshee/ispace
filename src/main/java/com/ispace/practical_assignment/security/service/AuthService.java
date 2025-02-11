@@ -7,6 +7,6 @@ import com.ispace.practical_assignment.security.payload.UserInfoResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
-    ResponseEntity<MessageResponse> signUp(SignupRequest request);
+    ResponseEntity<?> signUp(SignupRequest request);
     ResponseEntity<?> signIn(LoginRequest loginRequest);
 }

@@ -10,6 +10,7 @@ import com.ispace.practical_assignment.security.payload.LoginRequest;
 import com.ispace.practical_assignment.security.payload.MessageResponse;
 import com.ispace.practical_assignment.security.payload.SignupRequest;
 import com.ispace.practical_assignment.security.payload.UserInfoResponse;
+import com.ispace.practical_assignment.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,21 +53,30 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public ResponseEntity<MessageResponse> signUp(SignupRequest signUpRequest) {
+    public ResponseEntity<?> signUp(SignupRequest signUpRequest) {
 
 
         CompromisedPasswordDecision check = compromisedPasswordChecker.check(signUpRequest.getPassword());
 
         if(check.isCompromised()){
-            return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(), "Error: Password is Compromised Plz use strong password !"));
+
+            return ResponseUtil.error(HttpStatus.BAD_REQUEST.value(),"Error: Password is Compromised Plz use strong password !");
+
+//            return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(),
+//                    "Error: Password is Compromised Plz use strong password !"));
         }
 
         if (userRepository.existsByUserName(signUpRequest.getUsername())) {
-            return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(),"Error: Username is already taken!"));
+
+            return ResponseUtil.error(HttpStatus.BAD_REQUEST.value(),"Error: Username is already taken!");
+           //return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(),"Error: Username is already taken!"));
         }
 
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(),"Error: Email is already in use!"));
+
+            return ResponseUtil.error(HttpStatus.BAD_REQUEST.value(),"Error: Email is already in use!");
+
+           // return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST.value(),"Error: Email is already in use!"));
         }
 
         // Create new user's account
@@ -104,9 +114,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setRoles(roles);
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponse(HttpStatus.CREATED.value(), "User registered successfully!"));
+        return  ResponseUtil.created(savedUser,"User created Successfully");
 }
 
     @Override
@@ -117,12 +127,7 @@ public class AuthServiceImpl implements AuthService {
             authentication = authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         } catch (AuthenticationException exception) {
-
-            MessageResponse errorResponse = new MessageResponse(
-                    HttpStatus.UNAUTHORIZED.value(),
-                    exception.getMessage()
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+            return ResponseUtil.error(HttpStatus.UNAUTHORIZED.value(), exception.getMessage());
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -141,7 +146,10 @@ public class AuthServiceImpl implements AuthService {
                 .jwtToken(jwtToken)
                 .roles(roles)
          .build();
-        return ResponseEntity.ok(response);
+
+
+        return  ResponseUtil.success(response,"User Logged-in Successfully");
+
     }
 
 

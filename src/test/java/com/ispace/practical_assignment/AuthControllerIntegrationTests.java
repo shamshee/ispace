@@ -1,6 +1,5 @@
 package com.ispace.practical_assignment;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -10,8 +9,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -22,80 +21,52 @@ public class AuthControllerIntegrationTests {
     private MockMvc mockMvc;
 
     @Test
-    public void testAuthControllerLogin() throws Exception {
-        String loginRequest = "{\n" +
-                "  \"username\": \"shamshee_ruhani\",\n" +
-                "  \"password\": \"Sham@123@Ruhani\"\n" +
-                "}";
+    public void testLoginSuccess() throws Exception {
+        String loginRequest = "{\"username\": \"shamshee_ruhani\", \"password\": \"Sham@123@Ruhani\"}";
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jwtToken").exists())
-                .andExpect(jsonPath("$.userId").value(Matchers.isA(Integer.class)))
-                .andExpect(jsonPath("$.username").value(instanceOf(String.class)))
-                .andExpect(jsonPath("$.roles[0]").exists());
+                .andExpect(jsonPath("$.data.jwtToken").exists())
+                .andExpect(jsonPath("$.data.userId", isA(Integer.class)))
+                .andExpect(jsonPath("$.data.username", instanceOf(String.class)))
+                .andExpect(jsonPath("$.data.roles[0]").exists());
     }
 
-
     @Test
-    public void testAuthControllerLoginWithOutUserName() throws Exception {
-        String loginRequest = "{\n" +
-               // "  \"username\": \"shamshee_ruhani\",\n" +
-                "  \"password\": \"Sham@123@Ruhani\"\n" +
-                "}";
+    public void testLoginWithoutUsername() throws Exception {
+        String loginRequest = "{\"password\": \"Sham@123@Ruhani\"}";
+
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.username").value("must not be blank"))
-               .andExpect(jsonPath("$.username").value(instanceOf(String.class)));
-
-
-
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.message").value("property validation failed"))
+                .andExpect(jsonPath("$.data.username").value("must not be blank"))
+                .andExpect(jsonPath("$.error").value(true))
+                .andExpect(jsonPath("$.timestamp").exists()); // Ensure timestamp is present
     }
 
     @Test
-    public void testAuthControllerLoginWithOutPassword() throws Exception {
-        String loginRequest = "{\n" +
-                "  \"username\": \"shamshee_ruhani\"\n" +
-                "}";
+    public void testLoginWithoutPassword() throws Exception {
+        String loginRequest = "{\"username\": \"shamshee_ruhani\"}";
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.password").value("must not be blank"))
-                .andExpect(jsonPath("$.password").value(instanceOf(String.class)));
-
-
-
+                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.message").value("property validation failed"))
+                .andExpect(jsonPath("$.data.password").value("must not be blank"))
+                .andExpect(jsonPath("$.error").value(true))
+                .andExpect(jsonPath("$.timestamp").exists()); // Ensure timestamp is present
     }
 
-
     @Test
-    public void testAuthControllerLoginWithOutUsernameAndPassword() throws Exception {
-        String loginRequest = "{}";
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.username").value("must not be blank"))
-                .andExpect(jsonPath("$.username").value(instanceOf(String.class)))
-                .andExpect(jsonPath("$.password").value("must not be blank"))
-                .andExpect(jsonPath("$.password").value(instanceOf(String.class)));
-
-
-
-
-    }
-
-
-    @Test
-    public void testAuthControllerLoginWithInvalidBody() throws Exception {
+    public void testLoginWithInvalidBody() throws Exception {
         String loginRequest = "{\n" +
                 "  \"username\": \"shamshee_ruhani\",\n" +
                 " \n" +
@@ -105,72 +76,49 @@ public class AuthControllerIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.statusCode", is(400)))
                 .andExpect(jsonPath("$.message").exists());
     }
 
-
     @Test
-    public void testAuthControllerloginWithBadCredentials() throws Exception {
-        String loginRequest = "{\n" +
-                "  \"username\": \"shamshee_ruhani1\",\n" +
-                "  \"password\": \"Sham@123@Ruhani\"\n" +
-                "}";
+    public void testLoginWithBadCredentials() throws Exception {
+        String loginRequest = "{\"username\": \"invalid_user\", \"password\": \"wrongPass123\"}";
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.statusCode", is(401)))
                 .andExpect(jsonPath("$.message").exists());
     }
 
-
-
     @Test
-    public void testAuthControllerSignUp() throws Exception {
-
-        String uniqueEmail = generateUniqueEmail();
-        String uniqueUserId = generateUniqueUserId();
-        String signUpRequest = String.format("{\n" +
-                "  \"username\": \"%s\",\n" +
-                "  \"email\": \"%s\",\n" +
-                "  \"role\": [\"admi\"],\n" +
-                "  \"password\": \"Tiger@754\"\n" +
-                "}", uniqueUserId, uniqueEmail);
+    public void testSignUpSuccess() throws Exception {
+        String signUpRequest = String.format("{\"username\": \"%s\", \"email\": \"%s\", \"role\": [\"admin\"], \"password\": \"Tiger@754\"}",
+                generateUniqueUserId(), generateUniqueEmail());
 
         mockMvc.perform(post("/auth/signup")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(signUpRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpRequest))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value(201))
-                .andExpect(jsonPath("$.message").value("User registered successfully!"));
+                .andExpect(jsonPath("$.statusCode", is(201)))
+                .andExpect(jsonPath("$.message", is("User created Successfully")));
     }
 
-
     @Test
-    public void testAuthControllerSignUpExistingUserName() throws Exception {
-
-
-        String signUpRequest = "{\n" +
-                "  \"username\": \"sham1shee123_r123\",\n" +
-                "  \"email\": \"sham1shee1231ruhani123@gmail.com\",\n" +
-                "  \"role\": [\"admin\"],\n" +
-                "  \"password\": \"Tiger@754\"\n" +
-                "}";
+    public void testSignUpExistingUsername() throws Exception {
+        String signUpRequest = "{\"username\": \"existing_user\", \"email\": \"newemail@example.com\", \"role\": [\"admin\"], \"password\": \"Tiger@754\"}";
 
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signUpRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("Error: Username is already taken!"));
+                .andExpect(jsonPath("$.statusCode", is(400)))
+                .andExpect(jsonPath("$.message", is("Error: Username is already taken!")));
     }
 
     @Test
-    public void testAuthControllerSignUpExistingEmail() throws Exception {
-
-
+    public void testSignUpExistingEmail() throws Exception {
         String signUpRequest = "{\n" +
                 "  \"username\": \"sham11shee123_r123\",\n" +
                 "  \"email\": \"sham1shee1231ruhani123@gmail.com\",\n" +
@@ -182,19 +130,16 @@ public class AuthControllerIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signUpRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
-                .andExpect(jsonPath("$.message").value("Error: Email is already in use!"));
+                .andExpect(jsonPath("$.statusCode", is(400)))
+                .andExpect(jsonPath("$.message", is("Error: Email is already in use!")));
     }
 
-
     @Test
-    public void testAuthControllerSignUpWithTemperedJsonRequest() throws Exception {
-
-
+    public void testSignUpWithInvalidJson() throws Exception {
         String signUpRequest = "{\n" +
                 "  \"username\": \"sham11shee123_r123\",\n" +
                 "  \"email\": \"sham1shee1231ruhani123@gmail.com\",\n" +
-                "  \"role\": [\"admin\"],\n" +
+                "  \"role\": [\"admin\"]\n" +
                 "  \"password\": \"Tiger@754\"\n" +
                 "}";
 
@@ -202,12 +147,13 @@ public class AuthControllerIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signUpRequest))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value(400))
+                .andExpect(jsonPath("$.statusCode", is(400)))
                 .andExpect(jsonPath("$.message").exists());
     }
 
+
     @Test
-    public void testAuthControllerSignUpValidation() throws Exception {
+    public void testSignUpValidation() throws Exception {
         String loginRequest = "{\n" +
                 "  \"username\": \"shamshee_ruhani\"\n" +
                 "}";
@@ -216,20 +162,13 @@ public class AuthControllerIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest))
                 .andExpect(status().isBadRequest());
-
-
-
-
     }
 
-
-    public static String generateUniqueEmail() {
-        return "user_" +  UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 10) + "@example.com";
+    private static String generateUniqueEmail() {
+        return "user_" + UUID.randomUUID().toString().substring(0, 8) + "@example.com";
     }
 
-    public static String generateUniqueUserId() {
-        return "user_" + UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 10);
+    private static String generateUniqueUserId() {
+        return "user_" + UUID.randomUUID().toString().substring(0, 8);
     }
-
-
-    }
+}

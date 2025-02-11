@@ -1,6 +1,7 @@
 package com.ispace.practical_assignment;
 
 
+import com.ispace.practical_assignment.controller.RecordController;
 import com.jayway.jsonpath.JsonPath;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -46,7 +48,7 @@ public class RecordControllerIntegrationTest {
                         .content(adminLoginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
-        adminJwtToken = JsonPath.read(adminResult.getResponse().getContentAsString(), "$.jwtToken");
+        adminJwtToken = JsonPath.read(adminResult.getResponse().getContentAsString(), "$.data.jwtToken");
 
 
         MvcResult userResult = mockMvc.perform(post("/auth/login")
@@ -54,7 +56,7 @@ public class RecordControllerIntegrationTest {
                         .content(userLoginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
-        userJwtToken = JsonPath.read(userResult.getResponse().getContentAsString(), "$.jwtToken");
+        userJwtToken = JsonPath.read(userResult.getResponse().getContentAsString(), "$.data.jwtToken");
     }
 
     @Test
@@ -119,8 +121,8 @@ public class RecordControllerIntegrationTest {
                         .content(request))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("Full authentication is required to access this resource"));
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
 
     }
 
@@ -180,8 +182,8 @@ public class RecordControllerIntegrationTest {
         mockMvc.perform(get("/api/nocontent"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("Full authentication is required to access this resource"));
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
 
     }
 
@@ -199,8 +201,8 @@ public class RecordControllerIntegrationTest {
         mockMvc.perform(get("/api/echo/2"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("Full authentication is required to access this resource"));
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
 
     }
 
@@ -223,7 +225,7 @@ public class RecordControllerIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.statusCode").value(404))
-                .andExpect(jsonPath("$.message").value("Resource Not found for given id"));
+                .andExpect(jsonPath("$.message").value("No Data found"));
 
 
     }
@@ -234,7 +236,7 @@ public class RecordControllerIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminJwtToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.deviceId").exists());;
+                .andExpect(jsonPath("$.data.deviceId").exists());;
     }
 
 
@@ -243,8 +245,8 @@ public class RecordControllerIntegrationTest {
         mockMvc.perform(get("/api/device/2"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("Full authentication is required to access this resource"));
+                .andExpect(jsonPath("$.statusCode").value(401))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
 
     }
 
@@ -266,7 +268,7 @@ public class RecordControllerIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.statusCode").value(404))
-                .andExpect(jsonPath("$.message").value("Resource Not found for given id"));
+                .andExpect(jsonPath("$.message").value("No Data found"));
 
 
     }

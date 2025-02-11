@@ -55,11 +55,7 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/v3/api-docs/").permitAll()
-                                .requestMatchers("/api/public/").permitAll()
-                                .requestMatchers("/swagger-ui/").permitAll()
-                                .requestMatchers("/api/test/").permitAll()
-                                //.requestMatchers("/api/**").permitAll()
+                               auth
                                  .requestMatchers("/auth/**").permitAll()
                                 .anyRequest().authenticated()
                 );
@@ -69,16 +65,6 @@ public class WebSecurityConfig {
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web -> web.ignoring().requestMatchers("/v2/api-docs",
-                "/configuration/ui",
-                "/swagger-resources/",
-                "/configuration/security",
-                "/swagger-ui.html",
-                "/webjars/"));
     }
 
     @Bean
